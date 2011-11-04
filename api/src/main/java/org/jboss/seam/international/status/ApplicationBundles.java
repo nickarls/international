@@ -25,11 +25,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
 /**
  * Maintains a global map of locales containing {@link ResourceBundle} objects.
- *
+ * 
  * @author <a href="mailto:lincolnbaxter@gmail.com">Lincoln Baxter, III</a>
  * @author <a href="http://community.jboss.org/people/ssachtleben">Sebastian Sachtleben</a>
  * @author <a href="http://community.jboss.org/people/kenfinni">Ken Finnigan</a>
@@ -42,6 +43,9 @@ public class ApplicationBundles implements Serializable {
 
     @Inject
     Locale appLocale;
+
+    @Inject
+    private Instance<BundleLoader> bundleLoader;
 
     public ApplicationBundles() {
     }
@@ -73,7 +77,12 @@ public class ApplicationBundles implements Serializable {
     public ResourceBundle get(final Locale locale, final Object key) {
         containsLocaleMap(locale);
         if (!bundles.get(locale).containsKey(key)) {
-            ResourceBundle bundle = ResourceBundle.getBundle(key.toString(), locale);
+            ResourceBundle bundle = null;
+            if (bundleLoader.isUnsatisfied()) {
+                bundle = ResourceBundle.getBundle(key.toString(), locale);
+            } else {
+                bundle = bundleLoader.get().loadBundle(locale, key.toString());
+            }
             put(locale, key.toString(), bundle);
         }
         return bundles.get(locale).get(key);
